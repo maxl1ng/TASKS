@@ -1,0 +1,20 @@
+@startuml
+'context'
+left to right direction
+skinparam monochrome true
+skinparam handwritten false
+skinparam shadowing false
+
+actor Client as cl
+actor Banker as bk
+package Classifier {
+  usecase "Loan request" as UC1
+  usecase "Train data providing" as UC2
+  usecase "Set classification parameters" as UC3
+  usecase "Get a decision on granting a loan" as UC4
+}
+cl --> UC1
+bk --> UC2
+bk --> UC3
+bk --> UC4
+@enduml
