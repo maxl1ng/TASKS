@@ -6,7 +6,7 @@ skinparam handwritten false
 skinparam shadowing false
 
 actor Client as cl
-actor Banker as bk
+actor Employee as em
 package Classifier {
   usecase "Loan request" as UC1
   usecase "Train data providing" as UC2
@@ -14,7 +14,7 @@ package Classifier {
   usecase "Get a decision on granting a loan" as UC4
 }
 cl --> UC1
-bk --> UC2
-bk --> UC3
-bk --> UC4
+em --> UC2
+em --> UC3
+em --> UC4
 @enduml
