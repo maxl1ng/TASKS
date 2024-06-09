@@ -1,3 +1,0 @@
-raw_data = [
-    {seniority=9, home=1, age=30, marital=2, records=1, expenses=73, assets=0, amount=800, price=846, status=1}
-]
