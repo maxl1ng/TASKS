@@ -7,15 +7,14 @@ skinparam shadowing false
 
 start
 
-:Receive the probability value on the training data;
+:Checking the data;
 
-if (Value = 100) then (no)
-    :Checking on validation data;
-    :Choosing promising parameter values;
-    :Training a model with new parameters;
-    :ROC curve plotting;
+if (Is the data valid?) then (yes)
+    :Data conversion;
+    :Use the model to make predictions;
+    :Return the predictions;
     stop
-else (yes)
+else (no)
     :Report an issue;
     stop
 endif
