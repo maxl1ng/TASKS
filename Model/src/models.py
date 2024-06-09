@@ -5,22 +5,17 @@ from sklearn.metrics import roc_auc_score
 
 
 import datetime
-from typing import Optional, Union, Iterable, Sequence, Any, cast
-
+from typing import Optional, Union, Iterable, Sequence, cast, Any
 import weakref
 
 
 class InvalidClientError(ValueError):
-    """Файл входных данных имеет недопустимое значение
-    """
+    """Файл входных данных имеет недопустимое значение"""
+
 
 # Создание суперкласса
 class Client:
-    """Абстрактный суперкласс для всех клиентов
 
-    Returns:
-        _type_: _description_
-    """
     # Определение контруктора, параметр self является ссылкой на текущий экземпляр класса
     def __init__(
         self,
@@ -48,16 +43,17 @@ class Client:
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}("
-            f"seniority={self.seniority}"
-            f"home={self.home}"
-            f"age={self.age}"
-            f"marital={self.marital}"
-            f"records={self.records}"
-            f"expenses={self.assets}"
-            f"amount={self.amount}"
+            f"seniority={self.seniority},"
+            f"home={self.home},"
+            f"age={self.age},"
+            f"marital={self.marital},"
+            f"records={self.records},"
+            f"expenses={self.assets},"
+            f"amount={self.amount},"
             f"price={self.price}"
             f")"
         )
+
 
 # Класс известного клиента
 class KnownClient(Client):
@@ -103,9 +99,9 @@ class KnownClient(Client):
         )
 
     @classmethod
-    def from_dict(cls, row: dict["str", "str"]) -> "KnownClient":
-        if row["status"] not in {'1', '2', '0'}:
-            raise InvalidClientError(f"Invalid client in {row!r}")
+    def from_dict(cls, row: dict[str, str]) -> "KnownClient":
+        if row["status"] not in {"0", "1", "2"}:
+            raise InvalidClientError(f"Invalid status in {row!r}")
         try:
             return cls(
                 seniority=int(row["seniority"]),
@@ -122,12 +118,14 @@ class KnownClient(Client):
         except ValueError as exeption:
             raise InvalidClientError(f"Invalid {row!r}")
 
+
 # Класс известного клиента для тренировочных данных
 class TrainingKnownClient(KnownClient):
 
     @classmethod
     def from_dict(cls, row: dict[str, str]) -> "TrainingKnownClient":
         return cast(TrainingKnownClient, super().from_dict(row))
+
 
 # Класс известного клиента для тестовых данных
 class TestingKnownClient(KnownClient):
@@ -183,6 +181,7 @@ class TestingKnownClient(KnownClient):
     def from_dict(cls, row: dict[str, str]) -> "TestingKnownClient":
         return cast(TestingKnownClient, super().from_dict(row))
 
+
 # Класс неизвестного клиента (нуждается в классификации)
 class UnknownClient(Client):
 
@@ -212,7 +211,8 @@ class UnknownClient(Client):
                 price=int(row["price"]),
             )
         except (KeyError, ValueError):
-            raise InvalidClientError(f"invalid {row!r}")
+            raise InvalidClientError(f"Invalid {row!r}")
+
 
 # Класс классифицированного клиента
 class ClassifiedClient(Client):
@@ -245,9 +245,9 @@ class ClassifiedClient(Client):
             f")"
         )
 
+
 # Гиперпараметр. Класс для определения параметров модели.
 class Hyperparameter:
-    # Тут задаем параметры при инициализации экземпляра класса
     def __init__(
         self, max_depth: int, min_sample_size: int, training: "TrainingData"
     ) -> None:
@@ -262,13 +262,14 @@ class Hyperparameter:
         if not training_data:
             raise RuntimeError("Broken Weak Reference")
         test_data = training_data.testing
+        x_test = TrainingData.get_list_clients(test_data)
         y_test = TrainingData.get_statuses_clients(test_data)
         y_predict = self.classify_list(test_data)
         self.quality = roc_auc_score(y_test, y_predict)
         for i in range(len(y_predict)):
             test_data[i].classification = y_predict[i]
 
-   # Классификация
+    # Классификация
     def classify_list(
         self, clients: Sequence[Union[UnknownClient, TestingKnownClient]]
     ) -> list[Any]:
@@ -284,6 +285,7 @@ class Hyperparameter:
         y_pred = classifier.predict(x_predict).tolist()
         return [y_pred]
 
+
 # Класс тренировочных данных
 class TrainingData:
     def __init__(self, name: str) -> None:
@@ -296,49 +298,30 @@ class TrainingData:
 
     # Загрузка данных с помощью словаря
     def load(self, raw_data_soruce: Iterable[dict[str, str]]) -> None:
-        """
-        Загружает и разбивается исходные данные
-
-        Args:
-            raw_data_soruce (Iterable[dict[str, str]]): Источник данных
-        """
 
         for n, row in enumerate(raw_data_soruce):
-            if n % 5 == 0:
-                testing_client = TestingKnownClient.from_dict(row)
-                self.testing.append(testing_client)
-            else:
-                training_data = TrainingKnownClient.from_dict(row)
-                self.training.append(training_data)
+            try:
+                if n % 5 == 0:
+                    testing_client = TestingKnownClient.from_dict(row)
+                    self.testing.append(testing_client)
+                else:
+                    training_data = TrainingKnownClient.from_dict(row)
+                    self.training.append(training_data)
+            except InvalidClientError as exception:
+                print(f"Row: {n + 1} {exception}")
+                return
         self.uploaded = datetime.datetime.now(tz=datetime.timezone.utc)
 
     def test(self, parameter: Hyperparameter) -> None:
-        """
-
-        Args:
-            parameter (Hyperparameter): Гиперпараметры
-        """
 
         parameter.test()
         self.tuning.append(parameter)
         self.tested = datetime.datetime.now(tz=datetime.timezone.utc)
 
-    def classify(
-        self, parameter: Hyperparameter, client: UnknownClient
-    ) -> ClassifiedClient:
-        """
+    def classify(self, parameter: Hyperparameter, client: Client) -> Client:
 
-        Args:
-            parameter (Hyperparameter): _description_
-            client (Client): _description_
-
-        Returns:
-            Client: _description_
-        """
-
-        return ClassifiedClient(
-            classification=parameter.classify_list([client])[0], client=client
-        )
+        classification = parameter.classify_list([client])[0], client = client
+        return client
 
     # Получение списка свойств клиентов обучения
     @staticmethod
