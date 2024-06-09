@@ -10,8 +10,8 @@ actor Employee as em
 package Classifier {
   usecase "Loan request" as UC1
   usecase "Train data providing" as UC2
-  usecase "Set classification parameters" as UC3
-  usecase "Get a decision on granting a loan" as UC4
+  usecase "Configuring model parameters" as UC3
+  usecase "Verification of model performance" as UC4
 }
 cl --> UC1
 em --> UC2
